@@ -78,7 +78,7 @@ stages:
         buildContext: '$(Build.SourcesDirectory)'
         tags: |
           latest
-          $(Build.BuildId)  # optional unique tag per build
+          $(Build.BuildId) 
 
 # -------------------
 # 3. DEPLOY STAGE
