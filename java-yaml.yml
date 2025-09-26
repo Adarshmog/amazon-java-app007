@@ -5,7 +5,7 @@ variables:
   azureWebAppName: adarsh-amazon-java-app
   azureResourceGroup: OCEAN
 
-# Use your custom self-hosted agent
+# Use your self-hosted agent
 pool:
   name: "Adarsh-CI-CD"
 
@@ -30,7 +30,7 @@ stages:
     - task: CopyFiles@2
       inputs:
         SourceFolder: 'Amazon-Web/target'
-        Contents: 'Amazon.war'
+        Contents: '*.war'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
     # Publish WAR as artifact
@@ -55,13 +55,13 @@ stages:
         artifactName: 'drop'
         targetPath: '$(Build.SourcesDirectory)/docker-context'
 
+    # Move WAR to the same folder as Dockerfile
     - task: CopyFiles@2
       displayName: "Prepare WAR for Docker build"
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)/docker-context'
-        Contents: 'Amazon.war'
+        Contents: '*.war'
         TargetFolder: '$(Build.SourcesDirectory)'
-    
 
     # Login to DockerHub
     - task: Docker@2
@@ -76,7 +76,9 @@ stages:
         repository: '$(dockerImageName)'
         dockerfile: 'Dockerfile'
         buildContext: '$(Build.SourcesDirectory)'
-        tags: 'latest'
+        tags: |
+          latest
+          $(Build.BuildId)  # optional unique tag per build
 
 # -------------------
 # 3. DEPLOY STAGE
