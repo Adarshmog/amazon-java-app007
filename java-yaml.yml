@@ -1,5 +1,5 @@
 trigger: none
-  variables:
+variables:
   dockerImageName: adarsh011/amazon-app
   azureWebAppName: adarsh-amazon-java-app
   azureResourceGroup: OCEAN
@@ -20,8 +20,9 @@ stages:
         goals: 'clean package'
     - task: PublishBuildArtifacts@1
       inputs:
-        pathToPublish: 'target/amazon.war'
+        pathToPublish: 'target'
         artifactName: 'drop'
+        publishLocation: 'Container'
 
 - stage: Docker
   displayName: 'Docker Build and Push'
