@@ -1,0 +1,60 @@
+trigger: none
+  variables:
+  dockerImageName: adarsh011/amazon-app
+  azureWebAppName: adarsh-amazon-java-app
+  azureResourceGroup: OCEAN
+
+pool:
+  name: "Adarsh-CI-CD"
+
+stages:
+- stage: Build
+  displayName: 'Build Stage'
+  jobs:
+  - job: MavenBuild
+    displayName: 'Maven Package'
+    steps:
+    - task: Maven@3
+      inputs:
+        mavenPomFile: 'pom.xml'
+        goals: 'clean package'
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: 'target/amazon.war'
+        artifactName: 'drop'
+
+- stage: Docker
+  displayName: 'Docker Build and Push'
+  dependsOn: Build
+  jobs:
+  - job: DockerBuildPush
+    displayName: 'Build & Push Docker Image'
+    steps:
+    - task: Docker@2
+      inputs:
+        command: 'login'
+        containerRegistry: 'adarsh-dhub'
+    - task: Docker@2
+      inputs:
+        command: 'buildAndPush'
+        repository: '$(dockerImageName)'
+        dockerfile: 'Dockerfile'
+        tags: 'latest'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure Web App'
+  dependsOn: Docker
+  jobs:
+  - deployment: DeployWebApp
+    displayName: 'Deploy Container to Azure'
+    environment: 'dev'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebAppContainer@1
+            inputs:
+              azureSubscription: 'adarsh-azure'
+              appName: '$(azureWebAppName)'
+              containers: '$(dockerImageName):latest'
+
