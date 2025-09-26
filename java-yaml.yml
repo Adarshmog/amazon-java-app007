@@ -28,7 +28,7 @@ stages:
     # 2️⃣ Copy WAR to artifact staging directory
     - task: CopyFiles@2
       inputs:
-        SourceFolder: 'target'        # Make sure your WAR is here
+        SourceFolder: 'Amazon-Web/target'        # Make sure your WAR is here
         Contents: '*.war'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
