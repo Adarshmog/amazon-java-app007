@@ -1,5 +1,5 @@
 trigger: none
-  variables:
+variables:
   dockerImageName: adarsh011/amazon-app
   azureWebAppName: adarsh-amazon-java-app
   azureResourceGroup: OCEAN
