@@ -1,37 +1,47 @@
 trigger: none
+
 variables:
   dockerImageName: adarsh011/amazon-app
   azureWebAppName: adarsh-amazon-java-app
   azureResourceGroup: OCEAN
 
+# Use your custom self-hosted agent
 pool:
   name: "Adarsh-CI-CD"
 
 stages:
+
+# -------------------
+# 1. BUILD STAGE
+# -------------------
 - stage: Build
   displayName: 'Build Stage'
   jobs:
   - job: MavenBuild
     displayName: 'Maven Package'
     steps:
+    # Build WAR using Maven
     - task: Maven@3
       inputs:
         mavenPomFile: 'pom.xml'
         goals: 'clean package'
-    
+
+    # Copy WAR file into artifact staging directory
     - task: CopyFiles@2
       inputs:
         SourceFolder: 'Amazon-Web/target'
         Contents: 'Amazon.war'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
+    # Publish WAR as artifact
     - task: PublishBuildArtifacts@1
       inputs:
         pathToPublish: '$(Build.ArtifactStagingDirectory)'
         artifactName: 'drop'
-    
 
-
+# -------------------
+# 2. DOCKER STAGE
+# -------------------
 - stage: Docker
   displayName: 'Docker Build and Push'
   dependsOn: Build
@@ -39,17 +49,36 @@ stages:
   - job: DockerBuildPush
     displayName: 'Build & Push Docker Image'
     steps:
+    # Download WAR artifact from previous stage
+    - task: DownloadPipelineArtifact@2
+      inputs:
+        artifactName: 'drop'
+        targetPath: '$(Build.SourcesDirectory)/docker-context'
+
+    # Copy WAR into Docker context
+    - script: |
+        mkdir -p $(Build.SourcesDirectory)/docker-context
+        cp $(Build.SourcesDirectory)/docker-context/Amazon.war $(Build.SourcesDirectory)/
+      displayName: "Prepare WAR for Docker build"
+
+    # Login to DockerHub
     - task: Docker@2
       inputs:
         command: 'login'
         containerRegistry: 'adarsh-dhub'
+
+    # Build & Push Docker Image
     - task: Docker@2
       inputs:
         command: 'buildAndPush'
         repository: '$(dockerImageName)'
         dockerfile: 'Dockerfile'
+        buildContext: '$(Build.SourcesDirectory)'
         tags: 'latest'
 
+# -------------------
+# 3. DEPLOY STAGE
+# -------------------
 - stage: Deploy
   displayName: 'Deploy to Azure Web App'
   dependsOn: Docker
