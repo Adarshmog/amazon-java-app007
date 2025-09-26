@@ -55,11 +55,13 @@ stages:
         artifactName: 'drop'
         targetPath: '$(Build.SourcesDirectory)/docker-context'
 
-    # Copy WAR into Docker context
-    - script: |
-        mkdir -p $(Build.SourcesDirectory)/docker-context
-        cp $(Build.SourcesDirectory)/docker-context/Amazon.war $(Build.SourcesDirectory)/
+    - task: CopyFiles@2
       displayName: "Prepare WAR for Docker build"
+      inputs:
+        SourceFolder: '$(Build.SourcesDirectory)/docker-context'
+        Contents: 'Amazon.war'
+        TargetFolder: '$(Build.SourcesDirectory)'
+    
 
     # Login to DockerHub
     - task: Docker@2
