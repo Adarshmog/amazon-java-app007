@@ -5,7 +5,6 @@ variables:
   azureWebAppName: adarsh-amazon-java-app
   azureResourceGroup: OCEAN
 
-# Use your self-hosted agent
 pool:
   name: "Adarsh-CI-CD"
 
@@ -20,20 +19,20 @@ stages:
   - job: MavenBuild
     displayName: 'Maven Package'
     steps:
-    # Build WAR using Maven
+    # 1️⃣ Build WAR using Maven
     - task: Maven@3
       inputs:
         mavenPomFile: 'pom.xml'
         goals: 'clean package'
 
-    # Copy WAR file into artifact staging directory
+    # 2️⃣ Copy WAR to artifact staging directory
     - task: CopyFiles@2
       inputs:
-        SourceFolder: 'Amazon-Web/target'
+        SourceFolder: 'target'        # Make sure your WAR is here
         Contents: '*.war'
         TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
-    # Publish WAR as artifact
+    # 3️⃣ Publish WAR as artifact
     - task: PublishBuildArtifacts@1
       inputs:
         pathToPublish: '$(Build.ArtifactStagingDirectory)'
@@ -49,27 +48,33 @@ stages:
   - job: DockerBuildPush
     displayName: 'Build & Push Docker Image'
     steps:
-    # Download WAR artifact from previous stage
+    # 1️⃣ Download WAR artifact from previous stage
     - task: DownloadPipelineArtifact@2
       inputs:
         artifactName: 'drop'
         targetPath: '$(Build.SourcesDirectory)/docker-context'
 
-    # Move WAR to the same folder as Dockerfile
+    # 2️⃣ Copy WAR to folder with Dockerfile
     - task: CopyFiles@2
-      displayName: "Prepare WAR for Docker build"
+      displayName: 'Prepare WAR for Docker build'
       inputs:
         SourceFolder: '$(Build.SourcesDirectory)/docker-context'
         Contents: '*.war'
         TargetFolder: '$(Build.SourcesDirectory)'
 
-    # Login to DockerHub
+    # 3️⃣ Verify WAR is in place
+    - script: |
+        echo "Listing files in Docker build context:"
+        ls -l $(Build.SourcesDirectory)
+      displayName: 'Verify WAR in build context'
+
+    # 4️⃣ Login to DockerHub
     - task: Docker@2
       inputs:
         command: 'login'
         containerRegistry: 'adarsh-dhub'
 
-    # Build & Push Docker Image
+    # 5️⃣ Build & Push Docker Image
     - task: Docker@2
       inputs:
         command: 'buildAndPush'
@@ -78,7 +83,7 @@ stages:
         buildContext: '$(Build.SourcesDirectory)'
         tags: |
           latest
-          $(Build.BuildId) 
+          $(Build.BuildId)
 
 # -------------------
 # 3. DEPLOY STAGE
